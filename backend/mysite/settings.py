@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+import sys
 from os import getenv
 import sentry_sdk
 
@@ -106,16 +107,24 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': getenv('DB_NAME', ''),
-        'USER': getenv('DB_USER', ''),
-        'PASSWORD': getenv('DB_PASS', ''),
-        'HOST': getenv('DB_HOST', ''),
-        'PORT': getenv('DB_PORT', ''),
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'test',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': getenv('DB_NAME', ''),
+            'USER': getenv('DB_USER', ''),
+            'PASSWORD': getenv('DB_PASS', ''),
+            'HOST': getenv('DB_HOST', ''),
+            'PORT': getenv('DB_PORT', ''),
+        }
+    }
 
 
 # Cache
