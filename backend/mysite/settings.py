@@ -129,14 +129,24 @@ else:
 
 # Cache
 
-CACHES = {
-    'default': {
-        'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': [
-            getenv('REDIS_HOST', '') + ':' + getenv('REDIS_PORT', ''),
-        ]
-    },
-}
+if 'test' in sys.argv:
+    CACHES = {
+        'default': {
+            'BACKEND': 'redis_cache.RedisCache',
+            'LOCATION': [
+                "localhost:6379",
+            ]
+        },
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'redis_cache.RedisCache',
+            'LOCATION': [
+                getenv('REDIS_HOST', '') + ':' + getenv('REDIS_PORT', ''),
+            ]
+        },
+    }
 
 
 # Session Storage

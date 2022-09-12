@@ -8,7 +8,6 @@ from todo.dtos import UserDto
 
 
 @never_cache
-@login_required
 def current(request):
     if not request.user.is_anonymous:
         user = find_by_fusion_auth_user_id(request.user.username)

@@ -19,8 +19,9 @@ class FusionAuthBackend(BaseBackend):
             user = response[1]
 
         if "forgotPasswordCode" in login and login["forgotPasswordCode"] is not None:
-            user = update_password_via_forgot(login["forgotPasswordCode"], login["newPassword"])
-            if user is None:
+            if update_password_via_forgot(login["forgotPasswordCode"], login["newPassword"]):
+                user = get_user_by_login(login["username"])
+            else:
                 return None
         elif response[1] is None:
             return None

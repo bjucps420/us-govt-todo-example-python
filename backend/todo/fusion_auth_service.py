@@ -95,7 +95,7 @@ def get_user_by_login(username):
 def update_password_via_forgot(password_reset_token, password):
     user = get_client().retrieve_user_by_change_password_id(password_reset_token)
     if user.was_successful():
-        return update_password(user["id"], password, False)
+        return update_password(user.success_response["user"]["id"], password, False)
     return False
 
 
@@ -123,7 +123,7 @@ def start_forgot_password(username):
     if user is not None:
         request = {
             "sendForgotPasswordEmail": True,
-            "applicationId": UUID(getenv('FUSION_AUTH_CLIENT_ID', '')),
+            "applicationId": str(UUID(getenv('FUSION_AUTH_CLIENT_ID', ''))),
             "loginId": username
         }
         return get_client().forgot_password(request).was_successful()
