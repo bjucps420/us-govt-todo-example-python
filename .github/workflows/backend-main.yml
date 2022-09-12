@@ -35,8 +35,8 @@ jobs:
       - name: fix code coverage paths
         working-directory: ./backend/test-reports
         run: |
-          sed -i 's;/home/runner/work/government-todo-python/government-todo-python/backend;/github/workspace;g' nosecover.xml
-          sed -i 's;/home/runner/work/government-todo-python/government-todo-python/backend;/github/workspace;g' nosetests.xml
+          sed -i 's;/home/runner/work/us-govt-todo-example-python/us-govt-todo-example-python/backend;/github/workspace;g' nosecover.xml
+          sed -i 's;/home/runner/work/us-govt-todo-example-python/us-govt-todo-example-python/backend;/github/workspace;g' nosetests.xml
       - uses: sonarsource/sonarcloud-github-action@master
         with:
           projectBaseDir: ./backend
