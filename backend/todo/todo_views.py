@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import permission_required, login_required
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from .fusion_auth_service import get_roles_for_application, find_by_fusion_auth_user_id
@@ -45,7 +45,7 @@ def validate(request, todo):
         errors.append("title is too long (max 2048 characters)")
     if todo["type"] not in get_types(request):
         errors.append("you are not permitted to create a todo of that classification")
-    if "Aid" in get_types(request) and todo["status"] != "Pending":
+    if "Aid" not in get_types(request) and todo["status"] != "Pending":
         errors.append("you are not permitted to change the status of a todo")
     return errors
 
@@ -65,21 +65,30 @@ def todo_list(request, status):
 
     todos = Todo.objects.filter(status=translate_status(status), type__in=get_types(request))
     if search != "":
-        todos = todos.filter(title=search)
+        todos = todos.filter(title__contains=search)
     if sortBy != "":
         if sortDesc:
             todos = todos.order_by("-" + sortBy)
         else:
             todos = todos.order_by(sortBy)
     paginator = Paginator(todos.values("id", "title", "description", "status", "type", "created_by", "updated_by"), itemsPerPage)
-    objs = paginator.get_page(page)
-    return JsonResponse({
-        "success": True,
-        "response": {
-            "total": todos.count(),
-            "items": list(objs)
-        },
-    })
+    try:
+        page = paginator.page(page)
+        return JsonResponse({
+            "success": True,
+            "response": {
+                "total": todos.count(),
+                "items": list(page.object_list)
+            },
+        })
+    except EmptyPage:
+        return JsonResponse({
+            "success": True,
+            "response": {
+                "total": todos.count(),
+                "items": []
+            },
+        })
 
 
 @never_cache
@@ -89,7 +98,14 @@ def by_id(request, id):
         todo = Todo.objects.filter(type__in=get_types(request)).get(id=id)
         return JsonResponse({
             "success": True,
-            "response": todo.__dict__,
+            "response": {
+                "title": todo.title,
+                "description": todo.description,
+                "status": todo.status,
+                "type": todo.type,
+                "created_by": todo.created_by,
+                "updated_by": todo.updated_by,
+            },
         })
     except Todo.DoesNotExist:
         return JsonResponse({
@@ -101,6 +117,11 @@ def by_id(request, id):
 @never_cache
 @login_required
 def create(request):
+    if request.user.has_perm("Aid"):
+        return JsonResponse({
+            "success": False,
+            "errorMessage": "You are not permitted to access this action",
+        })
     body = loads(request.body)
     if "id" not in body or body["id"] is None:
         errors = validate(request, body)
@@ -170,8 +191,9 @@ def update(request):
 @never_cache
 @permission_required('Aid')
 def delete(request):
+    body = loads(request.body)
     try:
-        Todo.objects.filter(type__in=get_types(request)).get(id=id).delete()
+        Todo.objects.filter(type__in=get_types(request)).get(id=body["id"]).delete()
     except Todo.DoesNotExist:
         pass
     return JsonResponse({

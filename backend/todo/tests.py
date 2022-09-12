@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from json import dumps, loads
 
+from todo.models import Todo
+
 
 class AuthTestCases(TestCase):
     def setUp(self):
@@ -389,3 +391,625 @@ class UserTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], False)
+
+
+class TodoTestCases(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='a718745d-e6bc-45d7-aaec-1ca45d417bb4',
+            email='temporary@gmail.com',
+            password='temporary')
+        Todo.objects.create(
+            title="Test 1",
+            description="Test 1",
+            status="Pending",
+            type="Unclassified",
+            created_by="test@test.com")
+        Todo.objects.create(
+            title="Test 2",
+            description="Test 2",
+            status="Pending",
+            type="Classified",
+            created_by="test@test.com")
+        Todo.objects.create(
+            title="Test 3",
+            description="Test 3",
+            status="Pending",
+            type="Secret",
+            created_by="test@test.com")
+        Todo.objects.create(
+            title="Test 4",
+            description="Test 4",
+            status="Pending",
+            type="Top Secret",
+            created_by="test@test.com")
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration":{"roles":["Unclassified"]}}))
+    def test_list_success_unclassified(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 1)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Classified"]}}))
+    def test_list_success_classified(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 2)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Secret"]}}))
+    def test_list_success_secret(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 3)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Top Secret"]}}))
+    def test_list_success_top_secret(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 4)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Aid"]}}))
+    def test_list_success_aid(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 4)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    def test_list_success_sort(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING?sortBy=id'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 1)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    def test_list_success_sort(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING?page=2'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 0)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    def test_list_search(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/list/PENDING?search=Test'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+        self.assertEqual(len(body["response"]["items"]), 1)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    def test_get_by_id_success(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/1'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    def test_get_by_id_failure(self, mock1, mock2):
+        mock2.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.get(
+            '/api/todo/99'
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_unclassified_success(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_unclassified_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "Test 5", "status": "In Progress", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Classified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_classified_success(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Classified"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Classified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_classified_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Secret"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_secret_success(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Secret"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_secret_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "a" * 256, "description": "Test 5", "status": "Pending", "type": "Secret"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Top Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_top_secret_success(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Top Secret"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Top Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_top_secret_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "a" * 2049, "status": "Pending", "type": "Top Secret"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Aid"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_create_top_secret_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/create',
+            dumps({"title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Top Secret"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_update_unclassified_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/update',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Classified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_update_classified_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/update',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_update_secret_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/update',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Top Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_update_top_secret_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/update',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Aid"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_update_aid_success(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/update',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Aid"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_update_aid_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/update',
+            dumps({"id": 1, "title": "a" * 256, "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Unclassified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_delete_unclassified_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/delete',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Classified"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_delete_classified_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/delete',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_delete_secret_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/delete',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Top Secret"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_delete_top_secret_failure(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/delete',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_registration',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"registration": {"roles": ["Aid"]}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={
+                                           "user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4", "email": "test"}}))
+    def test_delete_aid_success(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/todo/delete',
+            dumps({"id": 1, "title": "Test 5", "description": "Test 5", "status": "Pending", "type": "Unclassified"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
