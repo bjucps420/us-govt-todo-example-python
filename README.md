@@ -20,7 +20,7 @@ Formal requirements for the project are in the `requirements/` folder written in
 
 Database diagrams are placed in the `architecture/` folder.  The project uses a PostgreSQL backend.
 
-The backend for the project is placed in the `backend/` folder.  The backend is written in Spring Boot / Java 17.
+The backend for the project is placed in the `backend/` folder.  The backend is written in Django / Python 3.
 
 The frontend for the project is placed in the `frontend/` folder.  The frontend is written in Vue / Nuxt.
 

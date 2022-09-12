@@ -1,0 +1,17 @@
+name: Deploy Backend Actions
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - run: curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - run: sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+      - run: doctl kubernetes cluster kubeconfig save todos
+      - run: kubectl set image deployments/backend backend=registry.digitalocean.com/todos/backend:$GITHUB_SHA

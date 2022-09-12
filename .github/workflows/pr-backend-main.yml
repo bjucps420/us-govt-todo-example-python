@@ -1,0 +1,41 @@
+name: Pull Request Backend Actions
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+      - run: sudo apt-get install python-dev libpq-dev
+      - run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - run: cd backend && python manage.py test
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          FUSION_AUTH_CLIENT_ID: 489c604d-63cf-4fb7-9489-35c3dab9ac81
+      - name: fix code coverage paths
+        working-directory: ./backend/test-reports
+        run: |
+          sed -i 's;/home/runner/work/government-todo-python/government-todo-python/backend;/github/workspace;g' nosecover.xml
+          sed -i 's;/home/runner/work/government-todo-python/government-todo-python/backend;/github/workspace;g' nosetests.xml
+      - uses: sonarsource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: ./backend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
