@@ -284,4 +284,108 @@ class UserTestCases(TestCase):
         response = c.get(
             '/api/user/get-secret',
         )
+        body = loads(response.content)
         self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user":{"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4"}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.enable_two_factor',
+                return_value=mock.Mock(was_successful=lambda: True, status=200, success_response={}))
+    def test_toggle_two_factor_on(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/user/toggle-two-factor',
+            dumps({"enableTwoFactor": True, "code": "test", "secret": "test"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user":{"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4","twoFactor":{"methods":[{"id": "test"}]}}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.disable_two_factor',
+                return_value=mock.Mock(was_successful=lambda: True, status=200, success_response={}))
+    def test_toggle_two_factor_off(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/user/toggle-two-factor',
+            dumps({"enableTwoFactor": False, "code": "test", "secret": "test"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user":{"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4"}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.update_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200, success_response={}))
+    def test_change_email(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/user/change-email',
+            dumps({"newEmail": "test"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
+                return_value=mock.Mock(was_successful=lambda: True, status=200))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user":{"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4","email":"test"}}))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.update_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200, success_response={}))
+    def test_change_password_success(self, mock1, mock2, mock3, mock4):
+        mock4.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/user/change-password',
+            dumps({"currentPassword": "test", "newPassword": "test"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], True)
+
+    @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
+                return_value=mock.Mock(was_successful=lambda: True, status=401))
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user":{"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4","email":"test"}}))
+    def test_change_password_success(self, mock1, mock2, mock3):
+        mock3.return_value = self.user
+        c = Client()
+        logged_in = c.login(username="a718745d-e6bc-45d7-aaec-1ca45d417bb4", password="temporary")
+        self.assertEqual(logged_in, True)
+        response = c.post(
+            '/api/user/change-password',
+            dumps({"currentPassword": "test", "newPassword": "test"}),
+            content_type="application/json"
+        )
+        body = loads(response.content)
+        self.assertLess(response.status_code, 300)
+        self.assertEqual(body["success"], False)
