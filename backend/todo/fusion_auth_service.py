@@ -8,7 +8,7 @@ def get_client():
 
 
 def get_roles_for_application(fusion_auth_user_id):
-    response = get_client().retrieve_registration(fusion_auth_user_id, UUID(getenv('FUSION_AUTH_CLIENT_ID', '')))
+    response = get_client().retrieve_registration(fusion_auth_user_id, UUID(getenv('FUSION_AUTH_APPLICATION_ID', '')))
     if response.was_successful():
         return response.success_response["registration"]["roles"]
     else:
@@ -24,7 +24,7 @@ def create_user(email, name, initial_password):
             "password": initial_password,
         },
         "registration": {
-            "applicationId": str(UUID(getenv('FUSION_AUTH_CLIENT_ID', ''))),
+            "applicationId": str(UUID(getenv('FUSION_AUTH_APPLICATION_ID', ''))),
             "skipRegistrationVerification": True,
         },
         "sendSetPasswordEmail": False,
@@ -123,7 +123,7 @@ def start_forgot_password(username):
     if user is not None:
         request = {
             "sendForgotPasswordEmail": True,
-            "applicationId": str(UUID(getenv('FUSION_AUTH_CLIENT_ID', ''))),
+            "applicationId": str(UUID(getenv('FUSION_AUTH_APPLICATION_ID', ''))),
             "loginId": username
         }
         return get_client().forgot_password(request).was_successful()

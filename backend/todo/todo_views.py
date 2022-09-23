@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import permission_required, login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator, EmptyPage
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
@@ -51,6 +52,7 @@ def validate(request, todo):
 
 
 @never_cache
+@csrf_exempt
 @login_required
 def todo_list(request, status):
     search = request.GET.get('search', '')
@@ -92,6 +94,7 @@ def todo_list(request, status):
 
 
 @never_cache
+@csrf_exempt
 @login_required
 def by_id(request, id):
     try:
@@ -115,6 +118,7 @@ def by_id(request, id):
 
 
 @never_cache
+@csrf_exempt
 @login_required
 def create(request):
     if request.user.has_perm("Aid"):
@@ -154,6 +158,7 @@ def create(request):
 
 
 @never_cache
+@csrf_exempt
 @permission_required('Aid')
 def update(request):
     body = loads(request.body)
@@ -189,6 +194,7 @@ def update(request):
 
 
 @never_cache
+@csrf_exempt
 @permission_required('Aid')
 def delete(request):
     body = loads(request.body)

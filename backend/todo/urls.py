@@ -6,7 +6,6 @@ from . import todo_views
 from . import user_views
 
 urlpatterns = [
-    path('auth/get-csrf', auth_views.get_csrf, name='getcsrf'),
     path('auth/register', auth_views.register, name='register'),
     path('auth/forgot-password', auth_views.forgot_password, name='forgotpassword'),
     path('auth/login', auth_views.custom_login, name='login'),

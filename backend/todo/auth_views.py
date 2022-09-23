@@ -7,20 +7,13 @@ from json import loads
 from .fusion_auth_service import find_by_email, create_user, start_forgot_password
 
 from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_exempt
 
 from todo.exceptions import TwoFactorAuthenticationCodeRequired, PasswordChangeRequired
 
 
 @never_cache
-@ensure_csrf_cookie
-def get_csrf(request):
-    response = JsonResponse({})
-    response['X-CSRFToken'] = get_token(request)
-    return response
-
-
-@never_cache
+@csrf_exempt
 def register(request):
     body = loads(request.body)
 
@@ -47,6 +40,7 @@ def register(request):
 
 
 @never_cache
+@csrf_exempt
 def forgot_password(request):
     user = request.GET.get('user', None)
     start_forgot_password(user)
@@ -56,6 +50,7 @@ def forgot_password(request):
 
 
 @never_cache
+@csrf_exempt
 def custom_login(request):
     body = loads(request.body)
 
@@ -81,6 +76,7 @@ def custom_login(request):
 
 
 @never_cache
+@csrf_exempt
 @login_required
 def custom_logout(request):
     logout(request)
