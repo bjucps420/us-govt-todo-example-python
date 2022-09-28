@@ -10,7 +10,7 @@ TWO_FACTOR_CODE_REQUIRED = 242
 
 class FusionAuthBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, login=None):
-        response = check_password(login["username"], login["password"])
+        response = check_password(login.username, login.password)
 
         user = None
         if response is None:
@@ -18,24 +18,22 @@ class FusionAuthBackend(BaseBackend):
         else:
             user = response[1]
 
-        if "forgotPasswordCode" in login and login["forgotPasswordCode"] is not None:
-            if update_password_via_forgot(login["forgotPasswordCode"], login["newPassword"]):
-                user = get_user_by_login(login["username"])
-            else:
+        if login.forgotPasswordCode is not None:
+            if not update_password_via_forgot(login.forgotPasswordCode, login.newPassword):
                 return None
         elif response[1] is None:
             return None
-        elif "twoFactorCode" in login and response[0] == TWO_FACTOR_CODE_REQUIRED and login["twoFactorCode"] is None:
+        elif response[0] == TWO_FACTOR_CODE_REQUIRED and login.twoFactorCode is None:
             raise TwoFactorAuthenticationCodeRequired()
-        elif "twoFactorCode" in login and response[0] == TWO_FACTOR_CODE_REQUIRED:
-            if not complete_two_factor_login(user["twoFactorId"], login["twoFactorCode"]):
+        elif response[0] == TWO_FACTOR_CODE_REQUIRED:
+            if not complete_two_factor_login(user["twoFactorId"], login.twoFactorCode):
                 return None
-            user = get_user_by_login(login["username"])
-        elif "newPassword" in login and response[0] == PASSWORD_CHANGE_REQUIRED and login["newPassword"] is None:
+        elif response[0] == PASSWORD_CHANGE_REQUIRED and login.newPassword is None:
             raise PasswordChangeRequired()
-        elif "newPassword" in login and response[0] == PASSWORD_CHANGE_REQUIRED:
-            user = get_user_by_login(login["username"])
-            update_password(user["id"], login["newPassword"], False)
+        elif response[0] == PASSWORD_CHANGE_REQUIRED:
+            user = get_user_by_login(login.username)
+            update_password(user["id"], login.newPassword, False)
+        user = get_user_by_login(login.username)
         try:
             return User.objects.get(username=user["id"])
         except User.DoesNotExist:

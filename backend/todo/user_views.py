@@ -1,68 +1,47 @@
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from .fusion_auth_service import find_by_fusion_auth_user_id, generate_secret, update_email, update_password, check_password, toggle_two_factor
-from json import loads
+from ninja import Router
+from .api import APIUserSchema, APISecretSchema, TwoFactorSchema, APIBoolSchema, EmailChangeSchema, PasswordChangeSchema, build_user
 
-from todo.dtos import UserDto
+
+router = Router()
 
 
-@never_cache
-@csrf_exempt
+@router.get("current", response=APIUserSchema)
 def current(request):
     if not request.user.is_anonymous:
         user = find_by_fusion_auth_user_id(request.user.username)
         if user is not None:
-            return JsonResponse({"user": UserDto(user).__dict__})
-    return JsonResponse(None, safe=False)
+            return {"user": build_user(user)}
+    return {"user": None}
 
 
-@never_cache
-@csrf_exempt
+@router.get("get-secret", response=APISecretSchema)
 @login_required
 def get_secret(request):
-    return JsonResponse({
-        "success": True,
-        "response": generate_secret()
-    })
+    return {"success": True, "response": generate_secret()}
 
 
-@never_cache
-@csrf_exempt
+@router.post("toggle-two-factor", response=APIBoolSchema)
 @login_required
-def change_two_factor(request):
-    body = loads(request.body)
-    return JsonResponse({
-        "success": True,
-        "response": toggle_two_factor(request.user.username, body)
-    })
+def change_two_factor(request, data: TwoFactorSchema):
+    return {"success": True, "response": toggle_two_factor(request.user.username, data)}
 
 
-@never_cache
-@csrf_exempt
+@router.post("change-email", response=APIBoolSchema)
 @login_required
-def change_email(request):
-    body = loads(request.body)
-    return JsonResponse({
-        "success": True,
-        "response": update_email(request.user.username, body["newEmail"])
-    })
+def change_email(request, data: EmailChangeSchema):
+    return {"success": True, "response": update_email(request.user.username, data.newEmail)}
 
 
-@never_cache
-@csrf_exempt
+@router.post("change-password", response=APIBoolSchema)
 @login_required
-def change_password(request):
-    body = loads(request.body)
+@never_cache
+def change_password(request, data: PasswordChangeSchema):
     user = find_by_fusion_auth_user_id(request.user.username)
-    if check_password(user["email"], body["currentPassword"])[0] < 300:
-        return JsonResponse({
-            "success": True,
-            "response": update_password(request.user.username, body["newPassword"], False)
-        })
+    if check_password(user["email"], data.currentPassword)[0] < 300:
+        return {"success": True, "response": update_password(request.user.username, data.newPassword, False)}
     else:
-        return JsonResponse({
-            "success": False,
-            "errorMessage": "Current password is incorrect."
-        })
+        return {"success": True, "errorMessage": "Current password is incorrect."}

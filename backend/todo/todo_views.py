@@ -5,7 +5,11 @@ from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from .fusion_auth_service import get_roles_for_application, find_by_fusion_auth_user_id
 from .models import Todo
-from json import loads
+from .api import APITodoListSchema, APITodoSchema, TodoSchema, APIBoolSchema
+from ninja import Router
+
+
+router = Router()
 
 
 def translate_status(status):
@@ -40,31 +44,20 @@ def get_types(request):
 
 def validate(request, todo):
     errors = []
-    if len(todo["title"]) > 255:
+    if len(todo.title) > 255:
         errors.append("title is too long (max 255 characters)")
-    if len(todo["description"]) > 2048:
+    if len(todo.description) > 2048:
         errors.append("title is too long (max 2048 characters)")
-    if todo["type"] not in get_types(request):
+    if todo.type not in get_types(request):
         errors.append("you are not permitted to create a todo of that classification")
-    if "Aid" not in get_types(request) and todo["status"] != "Pending":
+    if "Aid" not in get_types(request) and todo.status != "Pending":
         errors.append("you are not permitted to change the status of a todo")
     return errors
 
 
-@never_cache
-@csrf_exempt
+@router.get("list/{status}", response=APITodoListSchema)
 @login_required
-def todo_list(request, status):
-    search = request.GET.get('search', '')
-    groupBy = request.GET.get('groupBy', '')
-    groupByDesc = request.GET.get('groupByDesc', '')
-    sortBy = request.GET.get('sortBy', 'title')
-    sortDesc = bool(request.GET.get('sortDesc', 'false'))
-    page = int(request.GET.get('page', 1))
-    mustSort = request.GET.get('mustSort', '')
-    multiSort = request.GET.get('multiSort', '')
-    itemsPerPage = int(request.GET.get('itemsPerPage', '10'))
-
+def todo_list(request, status: str, search: str = "", groupBy: str = "", groupByDesc: str = "", sortBy: str = "title", sortDesc: str = "false", page: int = 1, mustSort: str = "", multiSort: str = "", itemsPerPage: int = 10):
     todos = Todo.objects.filter(status=translate_status(status), type__in=get_types(request))
     if search != "":
         todos = todos.filter(title__contains=search)
@@ -73,135 +66,72 @@ def todo_list(request, status):
             todos = todos.order_by("-" + sortBy)
         else:
             todos = todos.order_by(sortBy)
-    paginator = Paginator(todos.values("id", "title", "description", "status", "type", "created_by", "updated_by"), itemsPerPage)
+    paginator = Paginator(todos, itemsPerPage)
     try:
         page = paginator.page(page)
-        return JsonResponse({
-            "success": True,
-            "response": {
-                "total": todos.count(),
-                "items": list(page.object_list)
-            },
-        })
+        return {"success": True, "response": {"total": todos.count(), "items": list(page.object_list)}}
     except EmptyPage:
-        return JsonResponse({
-            "success": True,
-            "response": {
-                "total": todos.count(),
-                "items": []
-            },
-        })
+        return {"success": True, "response": {"total": todos.count(), "items": []}}
 
 
-@never_cache
-@csrf_exempt
+@router.post("create", response=APITodoSchema)
 @login_required
-def by_id(request, id):
-    try:
-        todo = Todo.objects.filter(type__in=get_types(request)).get(id=id)
-        return JsonResponse({
-            "success": True,
-            "response": {
-                "title": todo.title,
-                "description": todo.description,
-                "status": todo.status,
-                "type": todo.type,
-                "created_by": todo.created_by,
-                "updated_by": todo.updated_by,
-            },
-        })
-    except Todo.DoesNotExist:
-        return JsonResponse({
-            "success": False,
-            "errorMessage": "Todo not found",
-        })
-
-
-@never_cache
-@csrf_exempt
-@login_required
-def create(request):
+def create(request, data: TodoSchema):
     if request.user.has_perm("Aid"):
-        return JsonResponse({
-            "success": False,
-            "errorMessage": "You are not permitted to access this action",
-        })
-    body = loads(request.body)
-    if "id" not in body or body["id"] is None:
-        errors = validate(request, body)
+        return {"success": False, "errorMessage": "You are not permitted to access this action"}
+    if data.id is None:
+        errors = validate(request, data)
         if len(errors) == 0:
             todo = Todo.objects.create(
-                title=body["title"],
-                description=body["description"],
-                status=body["status"],
-                type=body["type"],
+                title=data.title,
+                description=data.description,
+                status=data.status,
+                type=data.type,
                 created_by=get_email(request)
             )
-            return JsonResponse({
-                "success": True,
-                "response": {
-                    "title": todo.title,
-                    "description": todo.description,
-                    "status": todo.status,
-                    "type": todo.type,
-                },
-            })
+            return {"success": True, "response": todo}
         else:
-            return JsonResponse({
-                "success": False,
-                "errorMessage": ", ".join(errors),
-            })
-    return JsonResponse({
-        "success": False,
-        "errorMessage": "cannot update todo via create",
-    })
+            return {"success": False, "errorMessage": ", ".join(errors)}
+    return {"success": False, "errorMessage": "cannot update todo via create"}
 
 
-@never_cache
-@csrf_exempt
+@router.post("update", response=APITodoSchema)
+@login_required
 @permission_required('Aid')
-def update(request):
-    body = loads(request.body)
+def update(request, data: TodoSchema):
     try:
-        todo = Todo.objects.filter(type__in=get_types(request)).get(id=body["id"])
-        errors = validate(request, body)
+        todo = Todo.objects.filter(type__in=get_types(request)).get(id=data.id)
+        errors = validate(request, data)
         if len(errors) == 0:
-            todo.title = body["title"]
-            todo.description = body["description"]
-            todo.status = body["status"]
-            todo.type = body["type"]
+            todo.title = data.title
+            todo.description = data.description
+            todo.status = data.status
+            todo.type = data.type
             todo.updated_by = get_email(request)
             todo.save()
-            return JsonResponse({
-                "success": True,
-                "response": {
-                    "title": todo.title,
-                    "description": todo.description,
-                    "status": todo.status,
-                    "type": todo.type,
-                },
-            })
+            return {"success": True, "response": todo}
         else:
-            return JsonResponse({
-                "success": False,
-                "errorMessage": ", ".join(errors),
-            })
+            return {"success": False, "errorMessage": ", ".join(errors)}
     except Todo.DoesNotExist:
-        return JsonResponse({
-            "success": True,
-            "response": {},
-        })
+        return {"success": False, "errorMessage": "Todo not found"}
 
 
-@never_cache
-@csrf_exempt
+@router.post("delete", response=APIBoolSchema)
+@login_required
 @permission_required('Aid')
-def delete(request):
-    body = loads(request.body)
+def delete(request, data: TodoSchema):
     try:
-        Todo.objects.filter(type__in=get_types(request)).get(id=body["id"]).delete()
+        Todo.objects.filter(type__in=get_types(request)).get(id=data.id).delete()
     except Todo.DoesNotExist:
         pass
-    return JsonResponse({
-        "success": True,
-    })
+    return {"success": True, "response": True}
+
+
+@router.get("{identifier}", response=APITodoSchema)
+@login_required
+def by_id(request, identifier: int):
+    try:
+        todo = Todo.objects.filter(type__in=get_types(request)).get(id=identifier)
+        return {"success": True, "response": todo}
+    except Todo.DoesNotExist:
+        return {"success": False, "errorMessage": "Todo not found"}

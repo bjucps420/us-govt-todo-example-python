@@ -59,19 +59,19 @@ def toggle_two_factor(fusion_auth_user_id, two_factor_dto):
     AUTHENTICATOR = "authenticator"
     user = find_by_fusion_auth_user_id(fusion_auth_user_id)
     if user is not None:
-        if two_factor_dto["enableTwoFactor"]:
+        if two_factor_dto.enableTwoFactor:
             request = {
-                "code": two_factor_dto["code"],
+                "code": two_factor_dto.code,
                 "method": AUTHENTICATOR,
-                "secret": two_factor_dto["secret"],
+                "secret": two_factor_dto.secret,
             }
             response = get_client().enable_two_factor(user["id"], request);
             if response.was_successful():
-                return response.success_response
+                return True
         else:
-            response = get_client().disable_two_factor(user["id"], user["twoFactor"]["methods"][0]["id"], two_factor_dto["code"]);
-            return {} if response.was_successful else None
-    return None
+            response = get_client().disable_two_factor(user["id"], user["twoFactor"]["methods"][0]["id"], two_factor_dto.code);
+            return True if response.was_successful else False
+    return False
 
 
 def check_password(email, password):

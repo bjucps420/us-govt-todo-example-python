@@ -8,3 +8,4 @@ coverage==6.4.4
 mock==4.0.3
 django-redis-cache==3.0.1
 fusionauth-client==1.36.0
+django-ninja==0.19.1

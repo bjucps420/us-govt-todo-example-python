@@ -1,83 +1,60 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
-from django.middleware.csrf import get_token
-from json import loads
 from .fusion_auth_service import find_by_email, create_user, start_forgot_password
-
-from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_exempt
+from .api import RegisterSchema, APIResponseRegisterSchema, APIResponse, APIResponseLoginSchema, LoginSchema
+from ninja import Router
+from ninja.security import django_auth
 
 from todo.exceptions import TwoFactorAuthenticationCodeRequired, PasswordChangeRequired
 
 
-@never_cache
-@csrf_exempt
-def register(request):
-    body = loads(request.body)
+router = Router()
 
-    user = find_by_email(body["username"])
+
+@router.post("/register", response=APIResponseRegisterSchema)
+def register(request, data: RegisterSchema):
+    user = find_by_email(data.username)
     if user is None:
-        user = create_user(body["username"], body["name"], body["password"])
+        user = create_user(data.username, data.name, data.password)
         user = User.objects.create_user(user["id"])
         if user is not None:
             login(request, user)
-            return JsonResponse({
-                "success": True,
-                "response": body
-            })
+            return {"success": True, "response": user}
         else:
-            return JsonResponse({
-                "success": False,
-                "errorMessage": "User account could not be created."
-            })
+            return {"success": False, "errorMessage": "User account could not be created."}
     else:
-        return JsonResponse({
-            "success": False,
-            "errorMessage": "An account already exists for this email.  Please use forgot password to reset your password."
-        })
+        return {"success": False, "errorMessage": "An account already exists for this email.  Please use forgot password to reset your password."}
 
 
-@never_cache
-@csrf_exempt
-def forgot_password(request):
-    user = request.GET.get('user', None)
+@router.get("/forgot-password", response=APIResponse)
+def forgot_password(request, user: str = ""):
     start_forgot_password(user)
-    return JsonResponse({
-        "success": True,
-    })
+    return {"success": True}
 
 
-@never_cache
-@csrf_exempt
-def custom_login(request):
-    body = loads(request.body)
-
-    body["success"] = False
+@router.post("/login", response=APIResponseLoginSchema)
+def custom_login(request, data: LoginSchema):
+    data.success = False
     user = None
     try:
-        user = authenticate(login=body)
+        user = authenticate(login=data)
     except TwoFactorAuthenticationCodeRequired:
-        body["requiresTwoFactorCode"] = True
-        body["success"] = True
+        data.requiresTwoFactorCode = True
+        data.success = True
     except PasswordChangeRequired:
-        body["requiresPasswordChange"] = True
-        body["success"] = True
+        data.requiresPasswordChange = True
+        data.success = True
 
     if user is not None:
         login(request, user)
-        body["success"] = True
+        data.success = True
 
-    return JsonResponse({
-        "success": True,
-        "response": body
-    })
+    return {"success": True, "response": data}
 
 
-@never_cache
-@csrf_exempt
+@router.get("/logout", response=APIResponse)
 @login_required
 def custom_logout(request):
     logout(request)
-    return JsonResponse({"success": True})
+    return {"success": True}
