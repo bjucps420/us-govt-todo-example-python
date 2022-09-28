@@ -2,10 +2,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from .fusion_auth_service import find_by_email, create_user, start_forgot_password
-from .api import RegisterSchema, APIResponseRegisterSchema, APIResponse, APIResponseLoginSchema, LoginSchema
+from .api import RegisterSchema, LoginSchema, APIResponseRegisterSchema, APIResponseBoolSchema, APIResponseLoginSchema
 from ninja import Router
-from ninja.security import django_auth
-
 from todo.exceptions import TwoFactorAuthenticationCodeRequired, PasswordChangeRequired
 
 
@@ -27,10 +25,10 @@ def register(request, data: RegisterSchema):
         return {"success": False, "errorMessage": "An account already exists for this email.  Please use forgot password to reset your password."}
 
 
-@router.get("/forgot-password", response=APIResponse)
+@router.get("/forgot-password", response=APIResponseBoolSchema)
 def forgot_password(request, user: str = ""):
     start_forgot_password(user)
-    return {"success": True}
+    return {"success": True, "response": True}
 
 
 @router.post("/login", response=APIResponseLoginSchema)
@@ -53,8 +51,8 @@ def custom_login(request, data: LoginSchema):
     return {"success": True, "response": data}
 
 
-@router.get("/logout", response=APIResponse)
+@router.get("/logout", response=APIResponseBoolSchema)
 @login_required
 def custom_logout(request):
     logout(request)
-    return {"success": True}
+    return {"success": True, "response": True}

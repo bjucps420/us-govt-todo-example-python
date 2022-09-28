@@ -1,6 +1,8 @@
 from ninja import Schema
+from ninja.orm import create_schema
 from typing import List
 from .fusion_auth_service import get_roles_for_application
+from .models import APIResponse
 
 
 def build_user(user):
@@ -24,21 +26,10 @@ def build_user(user):
     return result
 
 
-class APIResponse(Schema):
-    success: bool = None
-    errorMessage: str = None
-
-
 class RegisterSchema(Schema):
     name: str = None
     username: str = None
     password: str = None
-
-
-class APIResponseRegisterSchema(Schema):
-    success: bool = None
-    errorMessage: str = None
-    response: RegisterSchema = None
 
 
 class LoginSchema(Schema):
@@ -50,12 +41,6 @@ class LoginSchema(Schema):
     success: bool = None
     requiresPasswordChange: bool = None
     requiresTwoFactorCode: bool = None
-
-
-class APIResponseLoginSchema(Schema):
-    success: bool = None
-    errorMessage: str = None
-    response: LoginSchema = None
 
 
 class UserSchema(Schema):
@@ -77,12 +62,6 @@ class SecretSchema(Schema):
     secretBase32Encoded: str = None
 
 
-class APISecretSchema(Schema):
-    success: bool = None
-    errorMessage: str = None
-    response: SecretSchema = None
-
-
 class TwoFactorSchema(Schema):
     secret: str = None
     code: str = None
@@ -97,12 +76,6 @@ class EmailChangeSchema(Schema):
 class PasswordChangeSchema(Schema):
     currentPassword: str = None
     newPassword: str = None
-
-
-class APIBoolSchema(Schema):
-    success: bool = None
-    errorMessage: str = None
-    response: bool = None
 
 
 class TodoSchema(Schema):
@@ -120,13 +93,9 @@ class TodoListSchema(Schema):
     items: List[TodoSchema] = None
 
 
-class APITodoListSchema(Schema):
-    success: bool = None
-    errorMessage: str = None
-    response: TodoListSchema = None
-
-
-class APITodoSchema(Schema):
-    success: bool = None
-    errorMessage: str = None
-    response: TodoSchema = None
+APIResponseTodoListSchema = create_schema(APIResponse, name="APIResponseRegisterSchema", exclude=["id"], custom_fields=[("response", TodoListSchema, None)])
+APIResponseTodoSchema = create_schema(APIResponse, name="APIResponseRegisterSchema", exclude=["id"], custom_fields=[("response", TodoSchema, None)])
+APIResponseBoolSchema = create_schema(APIResponse, name="APIResponseRegisterSchema", exclude=["id"], custom_fields=[("response", bool, None)])
+APIResponseSecretSchema = create_schema(APIResponse, name="APIResponseRegisterSchema", exclude=["id"], custom_fields=[("response", SecretSchema, None)])
+APIResponseRegisterSchema = create_schema(APIResponse, name="APIResponseRegisterSchema", exclude=["id"], custom_fields=[("response", RegisterSchema, None)])
+APIResponseLoginSchema = create_schema(APIResponse, name="APIResponseRegisterSchema", exclude=["id"], custom_fields=[("response", LoginSchema, None)])

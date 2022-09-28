@@ -1,11 +1,8 @@
 from django.contrib.auth.decorators import permission_required, login_required
-from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator, EmptyPage
-from django.http import JsonResponse
-from django.views.decorators.cache import never_cache
 from .fusion_auth_service import get_roles_for_application, find_by_fusion_auth_user_id
 from .models import Todo
-from .api import APITodoListSchema, APITodoSchema, TodoSchema, APIBoolSchema
+from .api import TodoSchema, APIResponseTodoListSchema, APIResponseBoolSchema, APIResponseTodoSchema
 from ninja import Router
 
 
@@ -55,7 +52,7 @@ def validate(request, todo):
     return errors
 
 
-@router.get("list/{status}", response=APITodoListSchema)
+@router.get("list/{status}", response=APIResponseTodoListSchema)
 @login_required
 def todo_list(request, status: str, search: str = "", groupBy: str = "", groupByDesc: str = "", sortBy: str = "title", sortDesc: str = "false", page: int = 1, mustSort: str = "", multiSort: str = "", itemsPerPage: int = 10):
     todos = Todo.objects.filter(status=translate_status(status), type__in=get_types(request))
@@ -74,7 +71,7 @@ def todo_list(request, status: str, search: str = "", groupBy: str = "", groupBy
         return {"success": True, "response": {"total": todos.count(), "items": []}}
 
 
-@router.post("create", response=APITodoSchema)
+@router.post("create", response=APIResponseTodoSchema)
 @login_required
 def create(request, data: TodoSchema):
     if request.user.has_perm("Aid"):
@@ -95,7 +92,7 @@ def create(request, data: TodoSchema):
     return {"success": False, "errorMessage": "cannot update todo via create"}
 
 
-@router.post("update", response=APITodoSchema)
+@router.post("update", response=APIResponseTodoSchema)
 @login_required
 @permission_required('Aid')
 def update(request, data: TodoSchema):
@@ -116,7 +113,7 @@ def update(request, data: TodoSchema):
         return {"success": False, "errorMessage": "Todo not found"}
 
 
-@router.post("delete", response=APIBoolSchema)
+@router.post("delete", response=APIResponseBoolSchema)
 @login_required
 @permission_required('Aid')
 def delete(request, data: TodoSchema):
@@ -127,7 +124,7 @@ def delete(request, data: TodoSchema):
     return {"success": True, "response": True}
 
 
-@router.get("{identifier}", response=APITodoSchema)
+@router.get("{identifier}", response=APIResponseTodoSchema)
 @login_required
 def by_id(request, identifier: int):
     try:
