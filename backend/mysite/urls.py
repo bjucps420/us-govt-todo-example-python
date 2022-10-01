@@ -30,7 +30,8 @@ from todo.user_views import router as user_router
 class MyApi(NinjaAPI):
     def create_temporal_response(self, request):
         response = super().create_temporal_response(request)
-        response.headers["Expires"] = http_date(time.time() + 1)
+        response.headers["Expires"] = http_date(time.time())
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         return response
 
 
