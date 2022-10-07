@@ -24,6 +24,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - run: cd backend && tox -e py
+      - name: fix code coverage paths
+        working-directory: ./backend
+        run: |
+          sed -i 's;/home/runner/work/us-govt-todo-example-python/us-govt-todo-example-python;/github/workspace;g' coverage.xml
       - uses: sonarsource/sonarcloud-github-action@master
         with:
           projectBaseDir: ./backend
