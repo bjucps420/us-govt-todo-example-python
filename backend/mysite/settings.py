@@ -53,9 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'todo.apps.TodoConfig',
-    'django_nose',
     'ninja',
-    'django_prometheus',
 ]
 
 MIDDLEWARE = [
@@ -73,18 +71,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'mysite.urls'
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-NOSE_ARGS = [
-    '--with-xunit',
-    '--xunit-file=test-reports/nosetests.xml',
-    '--with-coverage',
-    '--cover-erase',
-    '--cover-xml',
-    '--cover-xml-file=test-reports/nosecover.xml',
-    '--cover-package=todo',
-    '--verbosity=3'
-]
 
 TEMPLATES = [
     {
@@ -108,7 +94,7 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-if 'test' in sys.argv:
+if os.getenv('TEST', '') == 'TEST':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -130,7 +116,7 @@ else:
 
 # Cache
 
-if 'test' in sys.argv:
+if os.getenv('TEST', '') == 'TEST':
     CACHES = {
         'default': {
             'BACKEND': 'redis_cache.RedisCache',

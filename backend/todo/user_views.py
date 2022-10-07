@@ -1,5 +1,4 @@
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.cache import never_cache
 from .fusion_auth_service import find_by_fusion_auth_user_id, generate_secret, update_email, update_password, check_password, toggle_two_factor
 from ninja import Router
 from .api import APIUserSchema, TwoFactorSchema, EmailChangeSchema, PasswordChangeSchema, build_user, APIResponseBoolSchema, APIResponseSecretSchema
@@ -37,7 +36,6 @@ def change_email(request, data: EmailChangeSchema):
 
 @router.post("change-password", response=APIResponseBoolSchema)
 @login_required
-@never_cache
 def change_password(request, data: PasswordChangeSchema):
     user = find_by_fusion_auth_user_id(request.user.username)
     if check_password(user["email"], data.currentPassword)[0] < 300:

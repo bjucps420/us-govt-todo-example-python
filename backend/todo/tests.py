@@ -31,7 +31,7 @@ class AuthTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user_by_email',
                 return_value=mock.Mock(was_successful=lambda: True, status=200,
                                        success_response={"user":{"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4"}}))
@@ -45,7 +45,7 @@ class AuthTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], False)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user_by_login_id',
                 return_value=mock.Mock(was_successful=lambda: True, status=200,
                                        success_response={"user":{"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4"}}))
@@ -59,7 +59,7 @@ class AuthTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user_by_login_id',
                 return_value=mock.Mock(was_successful=lambda: False, status=400))
     def test_forgot_password_failure(self, mock1):
@@ -70,11 +70,14 @@ class AuthTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: True, status=200,
                                        success_response={"id":"a718745d-e6bc-45d7-aaec-1ca45d417bb4"}))
-    def test_login_success(self, mock1):
+    @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user_by_login_id',
+                return_value=mock.Mock(was_successful=lambda: True, status=200,
+                                       success_response={"user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4"}}))
+    def test_login_success(self, mock1, mock2):
         c = Client()
         response = c.post(
             '/api/auth/login',
@@ -85,7 +88,7 @@ class AuthTestCases(TestCase):
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
         self.assertEqual(body["response"]["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: False, status=401))
     def test_login_failure(self, mock1):
@@ -99,7 +102,7 @@ class AuthTestCases(TestCase):
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
         self.assertEqual(body["response"]["success"], False)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: False, status=401))
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user_by_change_password_id',
@@ -124,7 +127,7 @@ class AuthTestCases(TestCase):
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
         self.assertEqual(body["response"]["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: True, status=242))
     def test_login_two_factor_required(self, mock1):
@@ -138,7 +141,7 @@ class AuthTestCases(TestCase):
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
         self.assertEqual(body["response"]["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: True, status=242,
                                        success_response={"user": {"id": "a718745d-e6bc-45d7-aaec-1ca45d417bb4"}, "twoFactorId": "test"}))
@@ -158,7 +161,7 @@ class AuthTestCases(TestCase):
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
         self.assertEqual(body["response"]["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: True, status=203))
     def test_login_password_change_required(self, mock1):
@@ -172,7 +175,7 @@ class AuthTestCases(TestCase):
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
         self.assertEqual(body["response"]["success"], True)
-
+    
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: True, status=203))
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user_by_login_id',
@@ -194,7 +197,7 @@ class AuthTestCases(TestCase):
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
         self.assertEqual(body["response"]["success"], True)
-
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     def test_logout(self, mock1):
         mock1.return_value = self.user
@@ -249,7 +252,7 @@ class UserTestCases(TestCase):
             username='a718745d-e6bc-45d7-aaec-1ca45d417bb4',
             email='temporary@gmail.com',
             password='temporary')
-
+    
     def test_current_no_user(self):
         c = Client()
         response = c.get(
@@ -257,7 +260,7 @@ class UserTestCases(TestCase):
         )
         self.assertLess(response.status_code, 300)
         self.assertNotEquals(response.content, "null")
-
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
                 return_value=mock.Mock(was_successful=lambda: True, status=200,
@@ -274,7 +277,7 @@ class UserTestCases(TestCase):
             '/api/user/current',
         )
         self.assertLess(response.status_code, 300)
-
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.generate_two_factor_secret',
                 return_value=mock.Mock(was_successful=lambda: True, status=200, success_response={}))
@@ -289,7 +292,7 @@ class UserTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
                 return_value=mock.Mock(was_successful=lambda: True, status=200,
@@ -309,7 +312,7 @@ class UserTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
                 return_value=mock.Mock(was_successful=lambda: True, status=200,
@@ -329,7 +332,7 @@ class UserTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.retrieve_user',
                 return_value=mock.Mock(was_successful=lambda: True, status=200,
@@ -349,7 +352,7 @@ class UserTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: True, status=200))
@@ -371,7 +374,8 @@ class UserTestCases(TestCase):
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
         self.assertEqual(body["success"], True)
-
+        self.assertEqual(body["response"], True)
+    
     @mock.patch('todo.authenticate.FusionAuthBackend.authenticate')
     @mock.patch('fusionauth.fusionauth_client.FusionAuthClient.login',
                 return_value=mock.Mock(was_successful=lambda: True, status=401))
@@ -390,7 +394,8 @@ class UserTestCases(TestCase):
         )
         body = loads(response.content)
         self.assertLess(response.status_code, 300)
-        self.assertEqual(body["success"], False)
+        self.assertEqual(body["success"], True)
+        self.assertIsNotNone(body["errorMessage"])
 
 
 class TodoTestCases(TestCase):

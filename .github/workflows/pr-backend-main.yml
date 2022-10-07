@@ -23,11 +23,7 @@ jobs:
           cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - run: cd backend && python manage.py test
-        env:
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          FUSION_AUTH_CLIENT_ID: 489c604d-63cf-4fb7-9489-35c3dab9ac81
+      - run: cd backend && tox -e py
       - name: fix code coverage paths
         working-directory: ./backend/test-reports
         run: |
